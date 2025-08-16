@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  age               Int
+  name              String
+  email             String         @unique
+  writtenPosts      Post[]         @relation("WrittenPosts")
+  favoritePosts     Post[]         @relation("favoritePosts")
+  userPreference    UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId  String?        @unique @db.ObjectId
+
+  @@unique([age,name])
+}
+
+model UserPreference {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId 
+  emailUpdates Boolean
+  user         User?
+}
+model Post {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  rating      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  author      User     @relation("WrittenPosts", fields: [authorId], references: [id])
+  authorId    String   @db.ObjectId
+  favoriteBy  User?   @relation("favoritePosts", fields: [favoriteId], references: [id])
+  favoriteId  String?  @db.ObjectId
+  categoryIDs String[]   @db.ObjectId
+  categories  Category[] @relation(fields: [categoryIDs], references: [id])
+
+  
+}
+model Category{
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  postIDs String[] @db.ObjectId
+  posts   Post[]   @relation(fields: [postIDs], references: [id])
+}
