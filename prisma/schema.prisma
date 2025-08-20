@@ -12,42 +12,24 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
-
-model User {
-  id                String         @id @default(auto()) @map("_id") @db.ObjectId
-  age               Int
-  name              String
-  email             String         @unique
-  writtenPosts      Post[]         @relation("WrittenPosts")
-  favoritePosts     Post[]         @relation("favoritePosts")
-  userPreference    UserPreference? @relation(fields: [userPreferenceId], references: [id])
-  userPreferenceId  String?        @unique @db.ObjectId
-
-  @@unique([age,name])
+model User{
+    id      String   @id @default(auto()) @map("_id") @db.ObjectId
+    name String
+    email String @unique
+    phoneNumber String?
+    password String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    tokens  Token[]
+    @@map("users")
 }
+model Token{
+     id      String   @id @default(auto()) @map("_id") @db.ObjectId
+     token String @unique
+     user  User @relation(fields: [userId], references: [id])
+     userId String @db.ObjectId
+     createdAt DateTime @default(now())
+     experiedAt DateTime
 
-model UserPreference {
-  id           String @id @default(auto()) @map("_id") @db.ObjectId 
-  emailUpdates Boolean
-  user         User?
-}
-model Post {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  rating      Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  author      User     @relation("WrittenPosts", fields: [authorId], references: [id])
-  authorId    String   @db.ObjectId
-  favoriteBy  User?   @relation("favoritePosts", fields: [favoriteId], references: [id])
-  favoriteId  String?  @db.ObjectId
-  categoryIDs String[]   @db.ObjectId
-  categories  Category[] @relation(fields: [categoryIDs], references: [id])
-
-  
-}
-model Category{
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name    String
-  postIDs String[] @db.ObjectId
-  posts   Post[]   @relation(fields: [postIDs], references: [id])
+     @@map("tokens")
 }

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            text-align: center;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        #profileData, #dashboardData {
+            text-align: left;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            background-color: #e74c3c;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Your Dashboard</h1>
+        <p>This is a protected area. Only logged-in users can see this.</p>
+
+        <div id="profileData">
+            <h2>Loading Profile...</h2>
+        </div>
+
+        <div id="dashboardData">
+            <h2>Loading Dashboard Data...</h2>
+        </div>
+
+        <button id="logoutButton" class="btn">Logout</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            const profileDataEl = document.getElementById('profileData');
+            const dashboardDataEl = document.getElementById('dashboardData');
+
+            // If no token is found, redirect to the login page immediately.
+            if (!accessToken) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Function to fetch data from a protected endpoint.
+            const fetchData = async (url, element) => {
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        element.innerHTML = `<h2>${data.message}</h2><pre>${JSON.stringify(data.user || data.data, null, 2)}</pre>`;
+                    } else if (response.status === 403 || response.status === 401) {
+                        // Handle expired token in a real app by using the refresh token to get a new one.
+                        // For now, we'll just log out.
+                        alert('Your session has expired. Please log in again.');
+                        logout();
+                    } else {
+                        const errorData = await response.json();
+                        element.innerHTML = `<p style="color: red;">Error: ${errorData.error}</p>`;
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    element.innerHTML = `<p style="color: red;">Could not connect to the server.</p>`;
+                }
+            };
+
+            // Fetch data for both sections
+            await fetchData('/api/profile', profileDataEl);
+            await fetchData('/api/dashboard', dashboardDataEl);
+
+            // Logout functionality
+            const logoutButton = document.getElementById('logoutButton');
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ refreshToken })
+                    });
+                } finally {
+                    logout();
+                }
+            });
+
+            function logout() {
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            }
+        });
+    </script>
+</body>
+</html>
